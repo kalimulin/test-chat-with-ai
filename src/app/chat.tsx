@@ -8,11 +8,13 @@ import { SignInModal } from "~/components/sign-in-modal";
 
 interface ChatProps {
   userName: string;
+  isAuthenticated: boolean;
 }
 
-export const ChatPage = ({ userName }: ChatProps) => {
+export const ChatPage = ({ userName, isAuthenticated }: ChatProps) => {
   const { messages, sendMessage, status } = useChat();
   const [input, setInput] = useState("");
+  const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
 
   const isLoading = status === "submitted" || status === "streaming";
 
@@ -24,6 +26,10 @@ export const ChatPage = ({ userName }: ChatProps) => {
     e.preventDefault();
     const text = input.trim();
     if (text.length === 0 || isLoading) return;
+    if (!isAuthenticated) {
+      setIsSignInModalOpen(true);
+      return;
+    }
     setInput("");
     void sendMessage({ text });
   };
@@ -79,7 +85,10 @@ export const ChatPage = ({ userName }: ChatProps) => {
         </div>
       </div>
 
-      <SignInModal isOpen={false} onClose={() => undefined} />
+      <SignInModal
+        isOpen={isSignInModalOpen}
+        onClose={() => setIsSignInModalOpen(false)}
+      />
     </>
   );
 };
