@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^3.0.43",
+    "@ai-sdk/react": "^4.0.95",
     "@auth/drizzle-adapter": "^1.7.2",
     "@t3-oss/env-nextjs": "^0.10.1",
     "ai": "^7.0.92",
