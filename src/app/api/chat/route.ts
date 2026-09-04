@@ -6,10 +6,16 @@ import {
   type UIMessage,
 } from "ai";
 import { model } from "~/lib/ai";
+import { auth } from "~/server/auth";
 
 export const maxDuration = 60;
 
 export async function POST(request: Request) {
+  const session = await auth();
+  if (!session?.user) {
+    return new Response(null, { status: 401 });
+  }
+
   const body = (await request.json()) as {
     messages: Array<UIMessage>;
   };

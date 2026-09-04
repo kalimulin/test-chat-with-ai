@@ -10,10 +10,9 @@ const config = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "cdn.discordapp.com",
+        hostname: "avatars.githubusercontent.com",
         port: "",
         pathname: "/**",
-        search: "",
       },
     ],
   },
