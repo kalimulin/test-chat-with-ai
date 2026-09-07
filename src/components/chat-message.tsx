@@ -1,7 +1,17 @@
+import {
+  getToolName,
+  isToolUIPart,
+  type DynamicToolUIPart,
+  type ToolUIPart,
+  type UIMessage,
+} from "ai";
+import { Loader2 } from "lucide-react";
 import ReactMarkdown, { type Components } from "react-markdown";
 
+export type MessagePart = UIMessage["parts"][number];
+
 interface ChatMessageProps {
-  text: string;
+  parts: MessagePart[];
   role: string;
   userName: string;
 }
@@ -38,7 +48,75 @@ const Markdown = ({ children }: { children: string }) => {
   return <ReactMarkdown components={components}>{children}</ReactMarkdown>;
 };
 
-export const ChatMessage = ({ text, role, userName }: ChatMessageProps) => {
+const getQuery = (input: unknown): string | undefined => {
+  if (
+    typeof input === "object" &&
+    input !== null &&
+    "query" in input &&
+    typeof input.query === "string"
+  ) {
+    return input.query;
+  }
+  return undefined;
+};
+
+const ToolInvocation = ({
+  part,
+}: {
+  part: ToolUIPart | DynamicToolUIPart;
+}) => {
+  const toolName = getToolName(part);
+
+  if (part.state === "output-error") {
+    return (
+      <div className="mb-4 rounded-lg border border-red-800 bg-red-950/50 p-3 text-sm text-red-300">
+        <p className="font-semibold">{toolName} failed</p>
+        <p>{part.errorText}</p>
+      </div>
+    );
+  }
+
+  const query = getQuery(part.input);
+
+  if (part.state === "output-available") {
+    const resultCount = Array.isArray(part.output) ? part.output.length : 0;
+
+    return (
+      <div className="mb-4 rounded-lg border border-gray-700 bg-gray-900/60 p-3 text-sm">
+        <p className="text-gray-400">
+          Searched the web for{" "}
+          <span className="font-semibold text-gray-200">
+            &ldquo;{query}&rdquo;
+          </span>
+        </p>
+        <p className="mt-1 text-xs text-gray-500">
+          Found {resultCount} {resultCount === 1 ? "result" : "results"}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-4 flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-900/60 p-3 text-sm text-gray-400">
+      <Loader2 className="size-4 animate-spin" />
+      <p>
+        Searching the web
+        {query ? (
+          <>
+            {" "}
+            for{" "}
+            <span className="font-semibold text-gray-200">
+              &ldquo;{query}&rdquo;
+            </span>
+          </>
+        ) : null}
+        ...
+      </p>
+    </div>
+  );
+};
+
+export const ChatMessage = ({ parts, role, userName }: ChatMessageProps) => {
   const isAI = role === "assistant";
 
   return (
@@ -52,9 +130,21 @@ export const ChatMessage = ({ text, role, userName }: ChatMessageProps) => {
           {isAI ? "AI" : userName}
         </p>
 
-        <div className="prose prose-invert max-w-none">
-          <Markdown>{text}</Markdown>
-        </div>
+        {parts.map((part, index) => {
+          if (isToolUIPart(part)) {
+            return <ToolInvocation key={index} part={part} />;
+          }
+
+          if (part.type === "text") {
+            return (
+              <div className="prose prose-invert max-w-none" key={index}>
+                <Markdown>{part.text}</Markdown>
+              </div>
+            );
+          }
+
+          return null;
+        })}
       </div>
     </div>
   );
