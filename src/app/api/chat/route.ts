@@ -10,6 +10,7 @@ import { z } from "zod";
 import { model } from "~/lib/ai";
 import { searchSerper } from "~/serper";
 import { auth } from "~/server/auth";
+import { checkAndRecordRequest } from "~/server/rate-limit";
 
 export const maxDuration = 60;
 
@@ -17,6 +18,11 @@ export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user) {
     return new Response(null, { status: 401 });
+  }
+
+  const { allowed } = await checkAndRecordRequest(session.user.id);
+  if (!allowed) {
+    return new Response(null, { status: 429 });
   }
 
   const body = (await request.json()) as {

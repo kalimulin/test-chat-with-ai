@@ -1,6 +1,7 @@
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { auth } from "~/server/auth/index.ts";
+import { getRequestsToday } from "~/server/rate-limit";
 import { ChatPage } from "./chat.tsx";
 import { AuthButton } from "../components/auth-button.tsx";
 
@@ -17,6 +18,9 @@ export default async function HomePage() {
   const session = await auth();
   const userName = session?.user?.name ?? "Guest";
   const isAuthenticated = !!session?.user;
+  const requestsToday = session?.user?.id
+    ? await getRequestsToday(session.user.id)
+    : 0;
 
   return (
     <div className="flex h-screen bg-gray-950">
@@ -68,7 +72,11 @@ export default async function HomePage() {
         </div>
       </div>
 
-      <ChatPage userName={userName} isAuthenticated={isAuthenticated} />
+      <ChatPage
+        userName={userName}
+        isAuthenticated={isAuthenticated}
+        initialRequestsToday={requestsToday}
+      />
     </div>
   );
 }

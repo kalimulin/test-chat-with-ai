@@ -2,17 +2,42 @@
 
 import { useChat } from "@ai-sdk/react";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { ChatMessage } from "~/components/chat-message";
 import { SignInModal } from "~/components/sign-in-modal";
 
 interface ChatProps {
   userName: string;
   isAuthenticated: boolean;
+  initialRequestsToday: number;
 }
 
-export const ChatPage = ({ userName, isAuthenticated }: ChatProps) => {
-  const { messages, sendMessage, status } = useChat();
+export const ChatPage = ({
+  userName,
+  isAuthenticated,
+  initialRequestsToday,
+}: ChatProps) => {
+  const [requestsToday, setRequestsToday] = useState(initialRequestsToday);
+
+  const refreshRequestsToday = useCallback(async () => {
+    try {
+      const res = await fetch("/api/requests/today");
+      if (!res.ok) return;
+      const data = (await res.json()) as { count: number };
+      setRequestsToday(data.count);
+    } catch {
+      // ignore refresh failures
+    }
+  }, []);
+
+  const { messages, sendMessage, status } = useChat({
+    onFinish: () => {
+      void refreshRequestsToday();
+    },
+    onError: () => {
+      void refreshRequestsToday();
+    },
+  });
   const [input, setInput] = useState("");
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
 
@@ -55,7 +80,12 @@ export const ChatPage = ({ userName, isAuthenticated }: ChatProps) => {
         </div>
 
         <div className="border-t border-gray-700">
-          <form onSubmit={handleSubmit} className="mx-auto max-w-[65ch] p-4">
+          {isAuthenticated && (
+            <div className="mx-auto max-w-[65ch] px-4 pt-3 text-center text-xs text-gray-500">
+              Requests today: {requestsToday}
+            </div>
+          )}
+          <form onSubmit={handleSubmit} className="mx-auto max-w-[65ch] p-4 pt-2">
             <div className="flex gap-2">
               <input
                 value={input}
