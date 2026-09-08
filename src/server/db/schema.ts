@@ -11,7 +11,8 @@ import {
   boolean,
   serial,
 } from "drizzle-orm/pg-core";
-import { type AdapterAccount } from "next-auth/adapters";
+import type { UIMessage } from "ai";
+import type { AdapterAccount } from "next-auth/adapters";
 import type { InferSelectModel, InferInsertModel } from "drizzle-orm";
 
 /**
@@ -136,6 +137,53 @@ export const verificationTokens = createTable(
   }),
 );
 
+export const chats = createTable(
+  "chat",
+  {
+    id: varchar("id", { length: 255 }).notNull().primaryKey(),
+    title: varchar("title", { length: 255 }).notNull(),
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", {
+      mode: "date",
+      withTimezone: true,
+    })
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (chat) => ({
+    userIdIdx: index("chat_user_id_idx").on(chat.userId),
+  }),
+);
+
+export const chatsRelations = relations(chats, ({ one, many }) => ({
+  user: one(users, { fields: [chats.userId], references: [users.id] }),
+  messages: many(messages),
+}));
+
+export const messages = createTable(
+  "message",
+  {
+    id: varchar("id", { length: 255 }).notNull().primaryKey(),
+    chatId: varchar("chat_id", { length: 255 })
+      .notNull()
+      .references(() => chats.id, { onDelete: "cascade" }),
+    role: varchar("role", { length: 255 })
+      .$type<UIMessage["role"]>()
+      .notNull(),
+    parts: json("parts").$type<UIMessage["parts"]>().notNull(),
+    order: integer("order").notNull(),
+  },
+  (message) => ({
+    chatIdIdx: index("message_chat_id_idx").on(message.chatId),
+  }),
+);
+
+export const messagesRelations = relations(messages, ({ one }) => ({
+  chat: one(chats, { fields: [messages.chatId], references: [chats.id] }),
+}));
+
 export declare namespace DB {
   export type User = InferSelectModel<typeof users>;
   export type NewUser = InferInsertModel<typeof users>;
@@ -153,4 +201,10 @@ export declare namespace DB {
 
   export type Request = InferSelectModel<typeof requests>;
   export type NewRequest = InferInsertModel<typeof requests>;
+
+  export type Chat = InferSelectModel<typeof chats>;
+  export type NewChat = InferInsertModel<typeof chats>;
+
+  export type Message = InferSelectModel<typeof messages>;
+  export type NewMessage = InferInsertModel<typeof messages>;
 }
