@@ -14,7 +14,8 @@ interface ChatProps {
   userName: string;
   isAuthenticated: boolean;
   initialRequestsToday: number;
-  chatId?: string;
+  chatId: string;
+  isNewChat: boolean;
   initialMessages?: UIMessage[];
 }
 
@@ -23,6 +24,7 @@ export const ChatPage = ({
   isAuthenticated,
   initialRequestsToday,
   chatId,
+  isNewChat,
   initialMessages,
 }: ChatProps) => {
   const router = useRouter();
@@ -40,8 +42,8 @@ export const ChatPage = ({
   }, []);
 
   const transport = useMemo(
-    () => new DefaultChatTransport({ body: { chatId } }),
-    [chatId],
+    () => new DefaultChatTransport({ body: { chatId, isNewChat } }),
+    [chatId, isNewChat],
   );
 
   const { messages, sendMessage, status } = useChat({

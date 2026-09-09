@@ -33,6 +33,9 @@ export default async function HomePage({
       }))
     : undefined;
 
+  const chatId = id ?? crypto.randomUUID();
+  const isNewChat = !id;
+
   return (
     <div className="flex h-screen bg-gray-950">
       {/* Sidebar */}
@@ -84,10 +87,12 @@ export default async function HomePage({
       </div>
 
       <ChatPage
+        key={chatId}
         userName={userName}
         isAuthenticated={isAuthenticated}
         initialRequestsToday={requestsToday}
-        chatId={id}
+        chatId={chatId}
+        isNewChat={isNewChat}
         initialMessages={initialMessages}
       />
     </div>

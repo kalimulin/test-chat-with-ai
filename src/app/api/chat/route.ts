@@ -35,17 +35,16 @@ export async function POST(request: Request) {
     return new Response(null, { status: 429 });
   }
 
-  const { messages, chatId: existingChatId } = (await request.json()) as {
+  const { messages, chatId, isNewChat } = (await request.json()) as {
     messages: Array<UIMessage>;
-    chatId?: string;
+    chatId: string;
+    isNewChat: boolean;
   };
 
   const userId = session.user.id;
   const title = getChatTitle(messages);
 
-  const chatId = existingChatId ?? crypto.randomUUID();
-
-  if (!existingChatId) {
+  if (isNewChat) {
     await upsertChat({ userId, chatId, title, messages });
   }
 
@@ -54,7 +53,7 @@ export async function POST(request: Request) {
       originalMessages: messages,
       generateId: () => crypto.randomUUID(),
       execute: async ({ writer }) => {
-        if (!existingChatId) {
+        if (isNewChat) {
           writer.write({
             type: "data-newChatCreated",
             data: { chatId },
