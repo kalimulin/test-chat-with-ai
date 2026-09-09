@@ -1,6 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
+import type { UIMessage } from "ai";
 import { DefaultChatTransport } from "ai";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -14,6 +15,7 @@ interface ChatProps {
   isAuthenticated: boolean;
   initialRequestsToday: number;
   chatId?: string;
+  initialMessages?: UIMessage[];
 }
 
 export const ChatPage = ({
@@ -21,6 +23,7 @@ export const ChatPage = ({
   isAuthenticated,
   initialRequestsToday,
   chatId,
+  initialMessages,
 }: ChatProps) => {
   const router = useRouter();
   const [requestsToday, setRequestsToday] = useState(initialRequestsToday);
@@ -43,6 +46,7 @@ export const ChatPage = ({
 
   const { messages, sendMessage, status } = useChat({
     transport,
+    messages: initialMessages,
     onData: (dataPart) => {
       if (isNewChatCreated(dataPart)) {
         router.push(`?id=${dataPart.data.chatId}`);

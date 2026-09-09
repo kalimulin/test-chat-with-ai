@@ -1,18 +1,11 @@
+import type { UIMessage } from "ai";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { auth } from "~/server/auth/index.ts";
 import { getRequestsToday } from "~/server/rate-limit";
+import { getChat, getChats } from "~/server/queries.ts";
 import { ChatPage } from "./chat.tsx";
 import { AuthButton } from "../components/auth-button.tsx";
-
-const chats = [
-  {
-    id: "1",
-    title: "My First Chat",
-  },
-];
-
-const activeChatId = "1";
 
 export default async function HomePage({
   searchParams,
@@ -26,6 +19,19 @@ export default async function HomePage({
   const requestsToday = session?.user?.id
     ? await getRequestsToday(session.user.id)
     : 0;
+  const chats = session?.user?.id ? await getChats(session.user.id) : [];
+  const activeChatId = id;
+
+  const chat = id ? await getChat(id) : null;
+
+  const initialMessages: UIMessage[] | undefined = chat
+    ? chat.messages.map((msg) => ({
+        id: msg.id,
+        role: msg.role,
+        parts: msg.parts,
+        content: "",
+      }))
+    : undefined;
 
   return (
     <div className="flex h-screen bg-gray-950">
@@ -50,7 +56,7 @@ export default async function HomePage({
             chats.map((chat) => (
               <div key={chat.id} className="flex items-center gap-2">
                 <Link
-                  href={`/?chatId=${chat.id}`}
+                  href={`/?id=${chat.id}`}
                   className={`flex-1 rounded-lg p-3 text-left text-sm text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 ${
                     chat.id === activeChatId
                       ? "bg-gray-700"
@@ -82,6 +88,7 @@ export default async function HomePage({
         isAuthenticated={isAuthenticated}
         initialRequestsToday={requestsToday}
         chatId={id}
+        initialMessages={initialMessages}
       />
     </div>
   );
