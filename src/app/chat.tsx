@@ -6,6 +6,7 @@ import { DefaultChatTransport } from "ai";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
+import { StickToBottom } from "use-stick-to-bottom";
 import { ChatMessage } from "~/components/chat-message";
 import { SignInModal } from "~/components/sign-in-modal";
 import { isNewChatCreated } from "~/lib/utils";
@@ -85,22 +86,28 @@ export const ChatPage = ({
   return (
     <>
       <div className="flex flex-1 flex-col">
-        <div
-          className="mx-auto w-full max-w-[65ch] flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-track-gray-800 scrollbar-thumb-gray-600 hover:scrollbar-thumb-gray-500"
-          role="log"
-          aria-label="Chat messages"
+        <StickToBottom
+          className="mx-auto min-h-0 w-full max-w-[65ch] flex-1 [&>div]:scrollbar-thin [&>div]:scrollbar-track-gray-800 [&>div]:scrollbar-thumb-gray-600 [&>div]:hover:scrollbar-thumb-gray-500"
+          resize="smooth"
+          initial="smooth"
         >
-          {messages.map((message, index) => {
-            return (
-              <ChatMessage
-                key={message.id ?? index}
-                parts={message.parts}
-                role={message.role}
-                userName={userName}
-              />
-            );
-          })}
-        </div>
+          <StickToBottom.Content
+            role="log"
+            aria-label="Chat messages"
+            className="p-4"
+          >
+            {messages.map((message, index) => {
+              return (
+                <ChatMessage
+                  key={message.id ?? index}
+                  parts={message.parts}
+                  role={message.role}
+                  userName={userName}
+                />
+              );
+            })}
+          </StickToBottom.Content>
+        </StickToBottom>
 
         <div className="border-t border-gray-700">
           {isAuthenticated && (
@@ -108,7 +115,10 @@ export const ChatPage = ({
               Requests today: {requestsToday}
             </div>
           )}
-          <form onSubmit={handleSubmit} className="mx-auto max-w-[65ch] p-4 pt-2">
+          <form
+            onSubmit={handleSubmit}
+            className="mx-auto max-w-[65ch] p-4 pt-2"
+          >
             <div className="flex gap-2">
               <input
                 value={input}
