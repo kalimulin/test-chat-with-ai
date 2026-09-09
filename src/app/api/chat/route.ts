@@ -9,10 +9,20 @@ import {
 import { z } from "zod";
 import { model } from "~/lib/ai";
 import { searchSerper } from "~/serper";
+import { upsertChat } from "~/server/queries";
 import { auth } from "~/server/auth";
 import { checkAndRecordRequest } from "~/server/rate-limit";
 
 export const maxDuration = 60;
+
+function getChatTitle(messages: UIMessage[]): string {
+  const firstUserMessage = messages.find((message) => message.role === "user");
+  const text = firstUserMessage?.parts.find(
+    (part) => part.type === "text",
+  )?.text;
+
+  return text ? text.slice(0, 255) : "Новый чат";
+}
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -25,15 +35,25 @@ export async function POST(request: Request) {
     return new Response(null, { status: 429 });
   }
 
-  const body = (await request.json()) as {
+  const { messages, chatId: existingChatId } = (await request.json()) as {
     messages: Array<UIMessage>;
+    chatId?: string;
   };
+
+  const userId = session.user.id;
+  const title = getChatTitle(messages);
+
+  const chatId = existingChatId ?? crypto.randomUUID();
+
+  if (!existingChatId) {
+    await upsertChat({ userId, chatId, title, messages });
+  }
 
   return createUIMessageStreamResponse({
     stream: createUIMessageStream({
+      originalMessages: messages,
+      generateId: () => crypto.randomUUID(),
       execute: async ({ writer }) => {
-        const { messages } = body;
-
         const result = streamText({
           model,
           system: `Вы - полезный научный сотрудник, имеющий доступ к инструменту веб-поиска.
@@ -71,6 +91,14 @@ export async function POST(request: Request) {
       onError: (e) => {
         console.error(e);
         return "Oops, an error occured!";
+      },
+      onEnd: async ({ messages: updatedMessages }) => {
+        await upsertChat({
+          userId,
+          chatId,
+          title,
+          messages: updatedMessages,
+        });
       },
     }),
   });
