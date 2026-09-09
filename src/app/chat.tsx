@@ -1,22 +1,28 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import { Loader2 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useMemo, useState } from "react";
 import { ChatMessage } from "~/components/chat-message";
 import { SignInModal } from "~/components/sign-in-modal";
+import { isNewChatCreated } from "~/lib/utils";
 
 interface ChatProps {
   userName: string;
   isAuthenticated: boolean;
   initialRequestsToday: number;
+  chatId?: string;
 }
 
 export const ChatPage = ({
   userName,
   isAuthenticated,
   initialRequestsToday,
+  chatId,
 }: ChatProps) => {
+  const router = useRouter();
   const [requestsToday, setRequestsToday] = useState(initialRequestsToday);
 
   const refreshRequestsToday = useCallback(async () => {
@@ -30,7 +36,18 @@ export const ChatPage = ({
     }
   }, []);
 
+  const transport = useMemo(
+    () => new DefaultChatTransport({ body: { chatId } }),
+    [chatId],
+  );
+
   const { messages, sendMessage, status } = useChat({
+    transport,
+    onData: (dataPart) => {
+      if (isNewChatCreated(dataPart)) {
+        router.push(`?id=${dataPart.data.chatId}`);
+      }
+    },
     onFinish: () => {
       void refreshRequestsToday();
     },

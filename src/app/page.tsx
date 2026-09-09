@@ -14,7 +14,12 @@ const chats = [
 
 const activeChatId = "1";
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ id?: string }>;
+}) {
+  const { id } = await searchParams;
   const session = await auth();
   const userName = session?.user?.name ?? "Guest";
   const isAuthenticated = !!session?.user;
@@ -76,6 +81,7 @@ export default async function HomePage() {
         userName={userName}
         isAuthenticated={isAuthenticated}
         initialRequestsToday={requestsToday}
+        chatId={id}
       />
     </div>
   );

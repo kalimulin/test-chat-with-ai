@@ -54,6 +54,14 @@ export async function POST(request: Request) {
       originalMessages: messages,
       generateId: () => crypto.randomUUID(),
       execute: async ({ writer }) => {
+        if (!existingChatId) {
+          writer.write({
+            type: "data-newChatCreated",
+            data: { chatId },
+            transient: true,
+          });
+        }
+
         const result = streamText({
           model,
           system: `Вы - полезный научный сотрудник, имеющий доступ к инструменту веб-поиска.
